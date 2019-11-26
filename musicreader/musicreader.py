@@ -62,7 +62,6 @@ show_and_destroy(binary, 'Binary and negative image')
 
 # Copies for image processing
 bw_hor, bw_ver = binary.copy(), binary.copy()
-
 notes_rows, notes_cols = binary.shape
 
 # Structuring element for lines isolation
@@ -138,15 +137,17 @@ tempo_map_img = match_pattern_threshold_tempo(bw_ver, half_note, tempo_map_img, 
 # Analyze pentagram
 pentagram_img = bw_hor.copy()
 
-# Find lines height, one by one
-k = 0
-tmp = np.zeros((5,))
+rows_histogram = np.zeros((height, 1))
 for i in range(height):
-    j = width // 2
-    if pentagram_img[i, j] == 255:
-        tmp[k] = i
-        cv2.floodFill(pentagram_img, None, (j, i), 0)
-        k += 1
+    zeros = cv2.bitwise_not(bw_hor)[i, :] == 0
+    rows_histogram[i] = np.sum(zeros)
+
+tmp = []
+for i in range(height):
+    if rows_histogram[i] > int(0.8 * width):
+        tmp.append(i)
+
+tmp = np.asarray(tmp)
 
 # Estimate space between lines using average
 s = 0
@@ -163,11 +164,11 @@ HEIGHTS = np.asarray([
 
 """
 Tempo-map creation
-    Labels:
-    1 - eighteen-notes -> 0.5
-    2 - dotted quarter-notes  -> 1.5
-    3 - quarter-notes --> 1.0
-    4 - half-notes --> 2.0
+    Labels      Description     Hash
+    2           8               0.5
+    3           4d              1.5
+    4           4               1.0
+    5           2               2.0
 """
 
 # Create tempo map sorting notes by horizontal position
